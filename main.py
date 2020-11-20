@@ -124,7 +124,7 @@ indicators = 4
 train_test_ratio = 0.8
 extractor = 'conv'
 training = True
-simple = False
+simple = True
 batch_size = 16
 epochs = 50
 
