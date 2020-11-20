@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
     ticker = 'TSLA'
-    data = bt.feeds.YahooFinanceData(dataname=ticker, fromdate=datetime.datetime(2020, 1, 1), todate=datetime.datetime(2020, 10, 31))
+    data = bt.feeds.YahooFinanceData(dataname=ticker, fromdate=datetime.datetime(2020, 1, 1), todate=datetime.date.today())
 
     # Add the Data Feed to Cerebro
     cerebro.adddata(data)
