@@ -135,8 +135,9 @@ def show_instance(sequence, truth, model, scaler = None):
     plt.plot([data_points], output, marker='+', markersize=3, color="blue")
     plt.show()
 
-ticker = 'AAPL'
+ticker = 'NIO' # start with apple then tesla then intc
 predictor = 'adjcp'
+dropna = True
 history = 30
 indicators = 4
 train_test_ratio = 0.9
@@ -145,7 +146,7 @@ training = True
 simple = True
 
 df = get_data(ticker)
-df = preprocess_data(df)
+df = preprocess_data(df, dropna=dropna)
 x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio)
 
 if training == True:

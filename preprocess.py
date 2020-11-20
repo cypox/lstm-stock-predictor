@@ -59,14 +59,17 @@ def add_technical_indicator(df):
 
     return df
 
-def preprocess_data(dataframe):
+def preprocess_data(dataframe, dropna=False):
     """data preprocessing pipeline"""
     df = prepare_dataset(data=dataframe)
     # add technical indicators using stockstats
     df_final = add_technical_indicator(df)
     df['pct_cp'] = df['adjcp'].pct_change()
-    # fill the missing values at the beginning
-    df_final.fillna(method='bfill',inplace=True)
+    # fill the missing values at the beginning # NOTE: or delete them
+    if dropna == True:
+        df_final.dropna(inplace=True)
+    else:
+        df_final.fillna(method='bfill',inplace=True)
     return df_final
 
 def add_turbulence(df):
