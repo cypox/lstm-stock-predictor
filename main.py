@@ -47,30 +47,7 @@ def create_dataset(df, train_test_ratio = 0.8):
     
     return x_train, y_train, x_test, y_test , scaler
 
-def build_simple_model(input_size, num_ouputs, extractor='conv'):
-    model_input = Input(shape=(input_size, 1)) # TODO: increase num channels (now = 1) to send multiple ticker histories
-    # the first branch operates on the first input
-    if extractor == 'lstm':
-        x = LSTM(32, return_sequences=True)(model_input)
-        x = LSTM(32, return_sequences=True)(x)
-        x = LSTM(16, return_sequences=True)(x)
-        x = LSTM(16, return_sequences=False)(x)
-    elif extractor == 'conv':
-        x = Conv1D(filters=32, kernel_size=7)(model_input)
-        x = Conv1D(filters=16, kernel_size=5)(x)
-        x = Conv1D(filters=16, kernel_size=3)(x)
-        x = Conv1D(filters=8, kernel_size=3)(x)
-        x = Flatten()(x)
-    x = Dense(16, activation="relu")(x)
-    x = Dense(16, activation="relu")(x)
-    x = Dense(8, activation="relu")(x)
-    x = Dense(1, activation="linear")(x)
-    # the second branch opreates on the second input
-    model = Model(inputs=model_input, outputs=x)
-
-    return model
-
-def build_model(input_a_size, input_b_size, num_ouputs, extractor='conv'):
+def build_model(input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor='conv'):
     inputA = Input(shape=(input_a_size, 1))
     inputB = Input(shape=(input_b_size,))
     # the first branch operates on the first input
@@ -88,10 +65,14 @@ def build_model(input_a_size, input_b_size, num_ouputs, extractor='conv'):
     x = Dense(16, activation="relu")(x)
     x = Dense(16, activation="relu")(x)
     x = Dense(8, activation="relu")(x)
-    x = Dense(1, activation="linear")(x)
+    x = Dense(num_outputs, activation="linear")(x)
     x = Model(inputs=inputA, outputs=x)
+
+    if simple == True:
+      return x
+  
     # the second branch opreates on the second input
-    y = Model(inputs=inputB, outputs=inputB)
+    y = Model(inputs=inputB, outputs=inputB)  
     # combine the output of the two branches
     combined = concatenate([x.output, y.output])
     # apply a FC layer and then a regression prediction on the
@@ -100,7 +81,7 @@ def build_model(input_a_size, input_b_size, num_ouputs, extractor='conv'):
     z = Dense(16, activation="relu")(z)
     z = Dense(16, activation="relu")(z)
     z = Dense(8, activation="relu")(z)
-    z = Dense(num_ouputs, activation="linear")(z)
+    z = Dense(num_outputs, activation="linear")(z)
     # our model will accept the inputs of the two branches and
     # then output a single value
     model = Model(inputs=[x.input, y.input], outputs=z)
@@ -135,43 +116,37 @@ def show_instance(sequence, truth, model, scaler = None):
     plt.plot([data_points], output, marker='+', markersize=3, color="blue")
     plt.show()
 
-ticker = 'NIO' # start with apple then tesla then intc
-predictor = 'adjcp'
-dropna = True
+ticker = 'TSLA' # start with apple then tesla then intc, finally NIO
+predictor = 'adjcp' # can use pct_cp
+dropna = True # or backward-fill
 history = 30
 indicators = 4
-train_test_ratio = 0.9
-extractor = 'lstm'
+train_test_ratio = 0.8
+extractor = 'conv'
 training = True
-simple = True
+simple = False
+batch_size = 16
+epochs = 50
 
 df = get_data(ticker)
 df = preprocess_data(df, dropna=dropna)
 x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio)
 
 if training == True:
+    model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
+    model.summary()
+    opt = Adam(lr=1e-3, decay=1e-3 / 200)
+    model.compile(optimizer=opt , loss='mean_squared_error')
+    log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     if simple != True:
-        model = build_model(history, indicators, 1, extractor=extractor)
-        model.summary()
-        opt = Adam(lr=1e-3, decay=1e-3 / 200)
-        model.compile(optimizer=opt , loss='mean_squared_error')
-        log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-        model.fit(x=[x_train[:,:history], x_train[:,history:]], y=y_train, shuffle=True, batch_size=1, epochs=20, callbacks=[tensorboard_callback]) # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
-        model.save("output_model")
+        model.fit(x=[x_train[:,:history], x_train[:,history:]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback]) # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
     else:
-        model = build_simple_model(history, 1, extractor=extractor)
-        model.summary()
-        opt = Adam(lr=1e-3, decay=1e-3 / 200)
-        model.compile(optimizer=opt , loss='mean_squared_error')
-        log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-        model.fit(x=[x_train[:,:history]], y=y_train, shuffle=True, batch_size=1, epochs=20, callbacks=[tensorboard_callback]) # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
-        model.save("output_model")
+        model.fit(x=[x_train[:,:history]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
+    model.save("output_model")
 else:
     model = tf.keras.models.load_model("output_model")
     model.summary()
-
 if simple == True:
     predictions = model.predict([x_test[:,:history]])
 else:
