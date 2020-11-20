@@ -7,7 +7,7 @@ import datetime
 import tensorflow as tf
 from keras.optimizers import Adam
 from keras.models import Sequential, Model
-from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten
+from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten, BatchNormalization
 
 from preprocess import preprocess_data
 from data_importer import get_data
@@ -15,11 +15,14 @@ from data_importer import get_data
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-def create_dataset(df, train_test_ratio = 0.8):
+def create_dataset(df, train_test_ratio = 0.8, scale = True):
     dataset = df[[predictor, 'macd', 'rsi', 'cci', 'adx']].values
 
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    dataset = scaler.fit_transform(dataset)
+    if scale:
+        scaler = MinMaxScaler(feature_range=(0, 1))
+        dataset = scaler.fit_transform(dataset)
+    else:
+        scaler = None
 
     training_data_len = math.ceil(len(dataset) * train_test_ratio)
     x_train = []
@@ -52,12 +55,14 @@ def build_model(input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor=
     inputB = Input(shape=(input_b_size,))
     # the first branch operates on the first input
     if extractor == 'lstm':
-        x = LSTM(32, return_sequences=True)(inputA)
+        x = BatchNormalization()(inputA)
+        x = LSTM(32, return_sequences=True)(x)
         x = LSTM(32, return_sequences=True)(x)
         x = LSTM(16, return_sequences=True)(x)
         x = LSTM(16, return_sequences=False)(x)
     elif extractor == 'conv':
-        x = Conv1D(filters=32, kernel_size=7)(inputA)
+        x = BatchNormalization()(inputA)
+        x = Conv1D(filters=32, kernel_size=7)(x)
         x = Conv1D(filters=16, kernel_size=5)(x)
         x = Conv1D(filters=16, kernel_size=3)(x)
         x = Conv1D(filters=8, kernel_size=3)(x)
@@ -127,10 +132,11 @@ training = True
 simple = True
 batch_size = 16
 epochs = 50
+scale = False
 
 df = get_data(ticker)
 df = preprocess_data(df, dropna=dropna)
-x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio)
+x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
 
 if training == True:
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
@@ -151,9 +157,13 @@ if simple == True:
     predictions = model.predict([x_test[:,:history]])
 else:
     predictions = model.predict([x_test[:,:history], x_test[:,history:]])
-prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
-prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
-predictions = prediction_scaler.inverse_transform(predictions)
+
+if scaler is not None:
+    prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
+    prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
+    predictions = prediction_scaler.inverse_transform(predictions)
+else:
+    prediction_scaler = None
 
 rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
 print(f'RMSE: {rmse}')
