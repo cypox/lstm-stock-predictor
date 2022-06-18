@@ -134,6 +134,8 @@ batch_size = 16
 epochs = 50
 scale = False
 
+# TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
+
 df = get_data(ticker)
 df = preprocess_data(df, dropna=dropna)
 x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
