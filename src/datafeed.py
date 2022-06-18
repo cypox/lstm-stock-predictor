@@ -94,7 +94,8 @@ class DataFeed:
     self.df = pd.read_csv(f"{path}/data.csv")
 
   def get_dataset(self, history_len, train_test_ratio, scale):
-    dataset = self.df[['adjcp', 'pct_cp', 'macd', 'rsi', 'cci', 'adx']].values
+    dataset = self.df[['adjcp', 'macd', 'rsi', 'cci', 'adx']].values
+    # dataset = self.df[['pct_cp', 'macd', 'rsi', 'cci', 'adx']].values
 
     if scale:
       scaler = MinMaxScaler(feature_range=(0, 1))
