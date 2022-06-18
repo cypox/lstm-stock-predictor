@@ -93,15 +93,15 @@ class DataFeed:
   def load(self, path="data/"):
     self.df = pd.read_csv(f"{path}/data.csv")
 
-  def get_dataset(self, history_len, train_test_ratio, scale):
+  def create_dataset(self, history_len, train_test_ratio, scale):
     dataset = self.df[['adjcp', 'macd', 'rsi', 'cci', 'adx']].values
     # dataset = self.df[['pct_cp', 'macd', 'rsi', 'cci', 'adx']].values
 
     if scale:
-      scaler = MinMaxScaler(feature_range=(0, 1))
-      dataset = scaler.fit_transform(dataset)
+      self.scaler = MinMaxScaler(feature_range=(0, 1))
+      dataset = self.scaler.fit_transform(dataset)
     else:
-      scaler = None
+      self.scaler = None
 
     training_data_len = math.ceil(len(dataset) * train_test_ratio)
     x_train = []
@@ -112,8 +112,8 @@ class DataFeed:
       x_train.append(np.append(train_data[i-history_len:i, 0], train_data[i-1, 1:]))
       y_train.append(train_data[i, 0])
 
-    x_train, y_train = np.array(x_train), np.array(y_train)
-    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+    x_train, self.y_train = np.array(x_train), np.array(y_train)
+    self.x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
     
     test_data = dataset[training_data_len-history_len:, :]
 
@@ -124,7 +124,14 @@ class DataFeed:
       x_test.append(np.append(test_data[i-history_len:i, 0], test_data[i-1, 1:]))
       y_test.append(test_data[i, 0])
 
-    x_test, y_test = np.array(x_test), np.array(y_test)
-    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-    
-    return x_train, y_train, x_test, y_test , scaler
+    x_test, self.y_test = np.array(x_test), np.array(y_test)
+    self.x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
+
+  def get_train_data(self):
+    return (self.x_train, self.y_train)
+
+  def get_test_data(self):
+    return (self.x_test, self.y_test)
+
+  def get_scaler(self):
+    return self.scaler

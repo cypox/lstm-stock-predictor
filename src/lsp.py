@@ -9,7 +9,7 @@ if __name__ == '__main__':
   
   p = Predictor()
 
-  training = False
+  training = True
   if training == True:
     p.build_model()
     p.compile()
@@ -19,3 +19,5 @@ if __name__ == '__main__':
   else:
     p.load("output_model")
     p.summary()
+
+  p.test()

@@ -1,3 +1,4 @@
+import math
 import datetime
 
 import tensorflow as tf
@@ -5,6 +6,20 @@ from keras.models import Model
 from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten, BatchNormalization
 from keras.optimizers import Adam
 
+import matplotlib.pyplot as plt
+plt.style.use('ggplot')
+
+
+def visualize_predictions(train, valid):
+  #visualize the data
+  plt.figure(figsize=(16, 8))
+  plt.title('Model')
+  plt.xlabel('Date', fontsize=18)
+  plt.ylabel('Close Price USD ($)', fontsize=18)
+  plt.plot(train['adjcp'])
+  plt.plot(valid[['adjcp', 'predictions']])
+  plt.legend(['Train', 'Val', 'Predictions'], loc='lower right')
+  plt.show()
 
 class Predictor:
   def __init__(self, simple=True):
@@ -61,7 +76,10 @@ class Predictor:
     self.model.summary()
 
   def train(self, datafeed, history_length, train_test_ratio, scale, batch_size, epochs):
-    x_train, y_train, x_test, y_test , scaler = datafeed.get_dataset(history_length, train_test_ratio, scale)
+    self.history = history_length
+    self.datafeed = datafeed
+    datafeed.create_dataset(history_length, train_test_ratio, scale)
+    (x_train, y_train) = datafeed.get_train_data()
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     if self.simple != True:
@@ -70,11 +88,32 @@ class Predictor:
     else:
       self.model.fit(x=[x_train[:,:history_length]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
     
-  def predict(self):
-    pass
+  def test(self):
+    scaler = self.datafeed.get_scaler()
+    (x_test, y_test) = self.get_test_data()
+    if self.simple == True:
+      predictions = self.model.predict([x_test[:,:self.history]])
+    else:
+      predictions = self.model.predict([x_test[:,:self.history], x_test[:,self.history:]])
+
+    if scaler is not None:
+      prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
+      prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
+      predictions = prediction_scaler.inverse_transform(predictions)
+    else:
+      prediction_scaler = None
+    rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
+    print(f'RMSE: {rmse}')
+
+    #plot the data
+    training_data_len = math.ceil(len(df) * 0.8)
+    train = df[:training_data_len]
+    valid = df[training_data_len:]
+    valid['predictions'] = predictions
+    visualize_predictions(train, valid)
 
   def save(self, filename):
     self.model.save(filename)
-  
+
   def load(self, filename):
     self.model = tf.keras.models.load_model(filename)
