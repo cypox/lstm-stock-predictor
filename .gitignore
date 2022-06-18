@@ -1,0 +1,5 @@
+__pycache__/
+.vscode/
+logs/
+output_model/
+.ipynb_checkpoints/
