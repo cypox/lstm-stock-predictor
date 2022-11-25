@@ -27,6 +27,7 @@ python3 src/lsp.py
 Orange: simple network with convolution layers.
 Blue: simple network with lstm layers.
 Red: double-input network with convolution layers.
+Cyan: double-input network with lstm layers.
 
 # TODO
 
