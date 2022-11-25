@@ -130,12 +130,12 @@ history = 30
 indicators = 4
 train_test_ratio = 0.8
 extractor = 'conv'
-training = True
+training = False
 simple = True
 batch_size = 16
 epochs = 256
 scale = False
-training_file = None
+training_file = 'data/training.data'
 
 # TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
 if training_file is None:
@@ -167,7 +167,7 @@ else:
 if training == True:
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
     model.summary()
-    opt = Adam(lr=1e-3, decay=1e-3 / 200)
+    opt = Adam(learning_rate=1e-3, decay=1e-3 / 200)
     model.compile(optimizer=opt , loss='mean_squared_error')
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
