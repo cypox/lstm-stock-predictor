@@ -157,10 +157,10 @@ if training_file is None:
 
     print(f"saving database containing {len(x_train)} training examples and {len(x_test)} test examples.")
     train_dataset = [x_train, x_test, y_train, y_test]
-    with open ('data/training.data', 'w') as f:
+    with open ('data/training.data', 'wb') as f:
         pkl.dump(train_dataset, f)
 else:
-    with open(training_file, 'r') as f:
+    with open(training_file, 'rb') as f:
         [x_train, x_test, y_train, y_test] = pkl.load(f)
         print(f"loading database containing {len(x_train)} training examples and {len(x_test)} test examples.")
 
