@@ -123,7 +123,7 @@ def show_instance(sequence, truth, model, scaler = None):
     plt.plot([data_points], output, marker='+', markersize=3, color="blue")
     plt.show()
 
-tickers = ['MSFT', 'TSLA', 'INTC', 'AAPL'] # start with apple then tesla then intc, finally NIO
+tickers = ['MSFT', 'TSLA', 'INTC', 'AAPL', 'DJIA', 'DOW', 'EXPE', 'PXD', 'MCHP', 'CRM', 'NRG', 'NOW']
 predictor = 'adjcp' # can use pct_cp
 dropna = True # or backward-fill
 history = 30
@@ -165,6 +165,14 @@ else:
         print(f"loading database containing {len(x_train)} training examples and {len(x_test)} test examples.")
 
 if training == True:
+    # shuffling dataset
+    n_train = len(x_train)
+    p_train = np.random.permutation(n_train)
+    x_train, y_train = x_train[p_train], y_train[p_train]
+    n_test = len(x_test)
+    p_test = np.random.permutation(n_test)
+    x_test, y_test = x_test[p_test], y_test[p_test]
+
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
     model.summary()
     opt = Adam(learning_rate=1e-3, decay=1e-3 / 200)
