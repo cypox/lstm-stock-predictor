@@ -121,7 +121,7 @@ def show_instance(sequence, truth, model, scaler = None):
     plt.plot([data_points], output, marker='+', markersize=3, color="blue")
     plt.show()
 
-ticker = 'TSLA' # start with apple then tesla then intc, finally NIO
+tickers = ['MSFT', 'TSLA', 'INTC', 'AAPL'] # start with apple then tesla then intc, finally NIO
 predictor = 'adjcp' # can use pct_cp
 dropna = True # or backward-fill
 history = 30
@@ -131,14 +131,25 @@ extractor = 'conv'
 training = True
 simple = True
 batch_size = 16
-epochs = 50
+epochs = 256
 scale = False
 
 # TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
-
-df = get_data(ticker)
-df = preprocess_data(df, dropna=dropna)
-x_train, y_train, x_test, y_test, scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
+x_train, y_train, x_test, y_test, scaler = None, None, None, None, None
+for ticker in tickers:
+    df = get_data(ticker)
+    df = preprocess_data(df, dropna=dropna)
+    t_x_train, t_y_train, t_x_test, t_y_test, t_scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
+    if x_train is not None:
+        x_train = np.concatenate((x_train, t_x_train))
+        y_train = np.concatenate((y_train, t_y_train))
+        x_test = np.concatenate((x_test, t_x_test))
+        y_test = np.concatenate((y_test, t_y_test))
+    else:
+        x_train = t_x_train
+        x_test = t_x_test
+        y_train = t_y_train
+        y_test = t_y_test
 
 if training == True:
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
