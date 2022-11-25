@@ -9,6 +9,8 @@ from keras.optimizers import Adam
 from keras.models import Sequential, Model
 from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten, BatchNormalization
 
+import pickle as pkl
+
 from preprocess import preprocess_data
 from data_importer import get_data
 
@@ -133,23 +135,32 @@ simple = True
 batch_size = 16
 epochs = 256
 scale = False
+training_file = None
 
 # TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
-x_train, y_train, x_test, y_test, scaler = None, None, None, None, None
-for ticker in tickers:
-    df = get_data(ticker)
-    df = preprocess_data(df, dropna=dropna)
-    t_x_train, t_y_train, t_x_test, t_y_test, t_scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
-    if x_train is not None:
-        x_train = np.concatenate((x_train, t_x_train))
-        y_train = np.concatenate((y_train, t_y_train))
-        x_test = np.concatenate((x_test, t_x_test))
-        y_test = np.concatenate((y_test, t_y_test))
-    else:
-        x_train = t_x_train
-        x_test = t_x_test
-        y_train = t_y_train
-        y_test = t_y_test
+if training_file is None:
+    x_train, y_train, x_test, y_test, scaler = None, None, None, None, None
+    for ticker in tickers:
+        df = get_data(ticker)
+        df = preprocess_data(df, dropna=dropna)
+        t_x_train, t_y_train, t_x_test, t_y_test, t_scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
+        if x_train is not None:
+            x_train = np.concatenate((x_train, t_x_train))
+            y_train = np.concatenate((y_train, t_y_train))
+            x_test = np.concatenate((x_test, t_x_test))
+            y_test = np.concatenate((y_test, t_y_test))
+        else:
+            x_train = t_x_train
+            x_test = t_x_test
+            y_train = t_y_train
+            y_test = t_y_test
+
+    print(f"saving database containing {len(x_train)} training examples and {len(x_test)} test examples.")
+    train_dataset = [x_train, x_test, y_train, y_test]
+    pkl.dump(train_dataset, 'data/training_set.data')
+else:
+    [x_train, x_test, y_train, y_test] = pkl.load(training_file)
+    print(f"loading database containing {len(x_train)} training examples and {len(x_test)} test examples.")
 
 if training == True:
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
