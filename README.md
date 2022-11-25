@@ -21,3 +21,8 @@ python3 src/lsp.py
 # Output
 
 ![alt text](https://github.com/cypox/lstm-stock-predictor/blob/main/output.png?raw=true)
+
+
+# TODO
+
+[1] database scaling needs to be rewritten (multi-ticker scaler, save/load scaler)
