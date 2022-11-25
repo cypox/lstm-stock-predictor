@@ -22,6 +22,11 @@ python3 src/lsp.py
 
 ![alt text](https://github.com/cypox/lstm-stock-predictor/blob/main/output.png?raw=true)
 
+![alt text](https://github.com/cypox/lstm-stock-predictor/blob/main/epoch_loss.svg?raw=true)
+
+Orange: simple network with convolution layers.
+Blue: simple network with lstm layers.
+Red: double-input network with convolution layers.
 
 # TODO
 
