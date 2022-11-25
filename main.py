@@ -184,7 +184,7 @@ if simple == True:
 else:
     predictions = model.predict([x_test[:,:history], x_test[:,history:]])
 
-if scaler is not None:
+if scale:
     prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
     prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
     predictions = prediction_scaler.inverse_transform(predictions)
