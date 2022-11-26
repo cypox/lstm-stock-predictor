@@ -136,11 +136,11 @@ class Dataset:
 
   def preprocess_data(self, dataframe, dropna=False):
     """data preprocessing pipeline"""
-    df = Database.prepare_dataset(data=dataframe)
+    df = Dataset.prepare_dataset(data=dataframe)
     # add technical indicators using stockstats
     df_final = self.add_technical_indicator(df)
     df['pctcp'] = df['adjcp'].pct_change()
-    df['pctcp_norm'] = df['pctcp'].apply(Database.activation)
+    df['pctcp_norm'] = df['pctcp'].apply(Dataset.activation)
     # fill the missing values at the beginning # NOTE: or delete them
     if dropna == True:
       df_final.dropna(inplace=True)
