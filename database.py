@@ -15,25 +15,29 @@ class Database:
     self.dropna = True # or backward-fill
     self.train_test_ratio = 0.8
     self.update_local_data = True
-    x_train, y_train, x_test, y_test = None, None, None, None
+    self.x_train = None
+    self.x_test = None
+    self.y_train = None
+    self.y_test = None
+    self.test_size = 0
+    self.train_size = 0
+    self.add_tickers(tickers)
+
+  def add_tickers(self, tickers):
     for ticker in tickers:
       df = self.get_single_ticker_data(ticker, update_saved_files=self.update_local_data)
       df = self.preprocess_data(df, dropna=self.dropna)
       t_x_train, t_y_train, t_x_test, t_y_test = self.create_dataset(df, train_test_ratio=self.train_test_ratio)
-      if x_train is not None:
-        x_train = np.concatenate((x_train, t_x_train))
-        y_train = np.concatenate((y_train, t_y_train))
-        x_test = np.concatenate((x_test, t_x_test))
-        y_test = np.concatenate((y_test, t_y_test))
+      if self.x_train is not None:
+        self.x_train = np.concatenate((self.x_train, t_x_train))
+        self.y_train = np.concatenate((self.y_train, t_y_train))
+        self.x_test = np.concatenate((self.x_test, t_x_test))
+        self.y_test = np.concatenate((self.y_test, t_y_test))
       else:
-        x_train = t_x_train
-        x_test = t_x_test
-        y_train = t_y_train
-        y_test = t_y_test
-    self.x_train = x_train
-    self.x_test = x_test
-    self.y_train = y_train
-    self.y_test = y_test
+        self.x_train = t_x_train
+        self.x_test = t_x_test
+        self.y_train = t_y_train
+        self.y_test = t_y_test
     self.test_size = len(self.x_test)
     self.train_size = len(self.x_train)
 
