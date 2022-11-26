@@ -1,15 +1,11 @@
-import math
 import numpy as np
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+import pickle as pkl
 
 import datetime
 import tensorflow as tf
 from keras.optimizers import Adam
-from keras.models import Sequential, Model
+from keras.models import Model
 from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten, BatchNormalization
-
-import pickle as pkl
 
 from database import Database
 
