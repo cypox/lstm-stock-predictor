@@ -11,46 +11,11 @@ from keras.layers import Dense, LSTM, Input, Conv1D, concatenate, Flatten, Batch
 
 import pickle as pkl
 
-from preprocess import preprocess_data
-from data_importer import get_data
+from database import Database
 
 import matplotlib.pyplot as plt
 plt.style.use('ggplot')
 
-def create_dataset(df, train_test_ratio = 0.8, scale = True):
-    dataset = df[[predictor, 'macd', 'rsi', 'cci', 'adx']].values
-
-    if scale:
-        scaler = MinMaxScaler(feature_range=(0, 1))
-        dataset = scaler.fit_transform(dataset)
-    else:
-        scaler = None
-
-    training_data_len = math.ceil(len(dataset) * train_test_ratio)
-    x_train = []
-    y_train = []
-    train_data = dataset[0:training_data_len, :]
-
-    for i in range(history, len(train_data)):
-        x_train.append(np.append(train_data[i-history:i, 0], train_data[i-1, 1:]))
-        y_train.append(train_data[i, 0])
-
-    x_train, y_train = np.array(x_train), np.array(y_train)
-    x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
-    
-    test_data = dataset[training_data_len-history:, :]
-
-    x_test = []
-    y_test = []
-
-    for i in range(history, len(test_data)):
-        x_test.append(np.append(test_data[i-history:i, 0], test_data[i-1, 1:]))
-        y_test.append(test_data[i, 0])
-
-    x_test, y_test = np.array(x_test), np.array(y_test)
-    x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
-    
-    return x_train, y_train, x_test, y_test , scaler
 
 def build_model(input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor='conv'):
     inputA = Input(shape=(input_a_size, 1))
@@ -95,34 +60,6 @@ def build_model(input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor=
 
     return model
 
-def visualize_predictions(train, valid):
-    #visualize the data
-    plt.figure(figsize=(16, 8))
-    plt.title('Model')
-    plt.xlabel('Date', fontsize=18)
-    plt.ylabel('Close Price USD ($)', fontsize=18)
-    plt.plot(train[predictor])
-    plt.plot(valid[[predictor, 'predictions']])
-    plt.legend(['Train', 'Val', 'Predictions'], loc='lower right')
-    plt.show()
-
-def show_instance(sequence, truth, model, scaler = None):
-    data_points = len(sequence) - indicators
-    sequence = np.expand_dims(sequence, 0)
-    if simple == True:
-        output = model.predict(sequence[:, :-indicators])
-    else:
-        output = model.predict([sequence[:, :-indicators], sequence[:, -indicators:]])
-    if scaler is not None:
-        sequence[0] = scaler.inverse_transform(sequence[0])
-        output = output / scaler.scale_ + (scaler.feature_range[0] - scaler.min_) / scaler.scale_
-        truth = truth / scaler.scale_ + (scaler.feature_range[0] - scaler.min_) / scaler.scale_
-    plt.figure(figsize=(16, 8))
-    plt.plot(sequence[:, :-indicators][0])
-    plt.plot([data_points], [truth], marker='o', markersize=3, color="red")
-    plt.plot([data_points], output, marker='+', markersize=3, color="blue")
-    plt.show()
-
 tickers = ['MSFT', 'TSLA', 'INTC', 'AAPL', 'DJIA', 'DOW', 'EXPE', 'PXD', 'MCHP', 'CRM', 'NRG', 'NOW']
 predictor = 'pctcp_norm' # can use adjcp, pctcp or pctcp_norm
 dropna = True # or backward-fill
@@ -134,45 +71,21 @@ training = True
 simple = False
 batch_size = 16
 epochs = 256
-scale = False
-reload_data = True
+reload_data = False
 
 # TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
 if reload_data:
-    x_train, y_train, x_test, y_test, scaler = None, None, None, None, None
-    for ticker in tickers:
-        df = get_data(ticker)
-        df = preprocess_data(df, dropna=dropna)
-        t_x_train, t_y_train, t_x_test, t_y_test, t_scaler = create_dataset(df, train_test_ratio=train_test_ratio, scale=scale)
-        if x_train is not None:
-            x_train = np.concatenate((x_train, t_x_train))
-            y_train = np.concatenate((y_train, t_y_train))
-            x_test = np.concatenate((x_test, t_x_test))
-            y_test = np.concatenate((y_test, t_y_test))
-        else:
-            x_train = t_x_train
-            x_test = t_x_test
-            y_train = t_y_train
-            y_test = t_y_test
-
-    print(f"saving database containing {len(x_train)} training examples and {len(x_test)} test examples.")
-    train_dataset = [x_train, x_test, y_train, y_test]
+    db = Database(tickers, history)
+    print(f"saving database containing {db.train_size} training examples and {db.test_size} test examples.")
     with open (f'data/training_{predictor}.data', 'wb') as f:
-        pkl.dump(train_dataset, f)
+        pkl.dump(db, f)
 else:
     with open(f'data/training_{predictor}.data', 'rb') as f:
-        [x_train, x_test, y_train, y_test] = pkl.load(f)
-        print(f"loading database containing {len(x_train)} training examples and {len(x_test)} test examples.")
+        db = pkl.load(f)
+        print(f"loading database containing {db.train_size} training examples and {db.test_size} test examples.")
 
 if training == True:
-    # shuffling dataset
-    n_train = len(x_train)
-    p_train = np.random.permutation(n_train)
-    x_train, y_train = x_train[p_train], y_train[p_train]
-    n_test = len(x_test)
-    p_test = np.random.permutation(n_test)
-    x_test, y_test = x_test[p_test], y_test[p_test]
-
+    db.shuffle()
     model = build_model(input_a_size = history, input_b_size = indicators, num_outputs = 1, extractor=extractor)
     model.summary()
     opt = Adam(learning_rate=1e-3, decay=1e-3 / 200)
@@ -180,33 +93,17 @@ if training == True:
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     if simple != True:
-        model.fit(x=[x_train[:,:history], x_train[:,history:]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback]) # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
+        model.fit(x=[db.x_train[:, :history][:,:,0], db.x_train[:, :history][:,-1,1:]], y=db.y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback]) # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
     else:
-        model.fit(x=[x_train[:,:history]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
-    model.save("output_model")
+        model.fit(x=[db.x_train[:,:history]], y=db.y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
+    model.save("output_model_{history}_{extractor}_{simple}")
 else:
-    model = tf.keras.models.load_model("output_model")
+    model = tf.keras.models.load_model("output_model_{history}_{extractor}_{simple}")
     model.summary()
 if simple == True:
-    predictions = model.predict([x_test[:,:history]])
+    predictions = model.predict([db.x_test[:,:history]])
 else:
-    predictions = model.predict([x_test[:,:history], x_test[:,history:]])
+    predictions = model.predict([db.x_test[:,:history], db.x_test[:,history:]])
 
-if scale:
-    prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
-    prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
-    predictions = prediction_scaler.inverse_transform(predictions)
-else:
-    prediction_scaler = None
-
-rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
+rmse = np.sqrt(np.mean(predictions - db.y_test) ** 2)
 print(f'RMSE: {rmse}')
-
-#plot the data
-training_data_len = math.ceil(len(df) * train_test_ratio)
-train = df[:training_data_len]
-valid = df[training_data_len:]
-valid['predictions'] = predictions
-visualize_predictions(train, valid)
-
-show_instance(x_test[10], y_test[10], model, scaler = prediction_scaler)
