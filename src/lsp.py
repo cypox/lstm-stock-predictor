@@ -6,7 +6,7 @@ from dataset import Dataset
 
 
 if __name__ == '__main__':
-  reload_data = True
+  reload_data = False
   history = 30
 
   if reload_data:
@@ -16,11 +16,11 @@ if __name__ == '__main__':
       with open (f'data/training.data', 'wb') as f:
           pkl.dump(data, f)
   else:
-      with open(f'data/training.data', 'rb') as f:
-          db = pkl.load(f)
+      with open(f'src/data/training.data', 'rb') as f:
+          data = pkl.load(f)
           print(f"loading database containing {data.train_size} training examples and {data.test_size} test examples.")
 
-  p = Predictor()
+  p = Predictor(simple=False)
 
   training = True
   if training == True:

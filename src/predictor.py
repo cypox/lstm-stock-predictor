@@ -81,7 +81,7 @@ class Predictor:
     # dataset.shuffle() # we are already shuffling in the fit function
     (x_train, y_train) = dataset.get_train_data()
     if self.simple:
-      train_input = [x_train[:,:history_length]]
+      train_input = [x_train[:,:,0]]
       train_target = y_train
     else:
       # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
@@ -91,10 +91,8 @@ class Predictor:
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
     self.model.fit(x=train_input, y=train_target, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
-    self.model.save("output_model_{self.history}_{simple}")
 
   def test(self):
-    scaler = self.dataset.get_scaler()
     (x_test, y_test) = self.dataset.get_test_data()
     if self.simple == True:
       predictions = self.model.predict([x_test[:,:self.history]])
@@ -103,13 +101,6 @@ class Predictor:
 
     rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
     print(f'RMSE: {rmse}')
-
-    #plot the data
-    training_data_len = math.ceil(len(df) * 0.8)
-    train = df[:training_data_len]
-    valid = df[training_data_len:]
-    valid['predictions'] = predictions
-    visualize_predictions(train, valid)
 
   def save(self, filename):
     self.model.save(filename)
