@@ -1,5 +1,6 @@
 import math
 import datetime
+import numpy as np
 
 import tensorflow as tf
 from keras.models import Model
@@ -75,33 +76,31 @@ class Predictor:
   def summary(self):
     self.model.summary()
 
-  def train(self, datafeed, history_length, train_test_ratio, scale, batch_size, epochs):
+  def train(self, dataset, history_length, train_test_ratio, scale, batch_size, epochs):
     self.history = history_length
-    self.datafeed = datafeed
-    datafeed.create_dataset(history_length, train_test_ratio, scale)
-    (x_train, y_train) = datafeed.get_train_data()
+    # dataset.shuffle() # we are already shuffling in the fit function
+    (x_train, y_train) = dataset.get_train_data()
+    if self.simple:
+      train_input = [x_train[:,:history_length]]
+      train_target = y_train
+    else:
+      # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
+      train_input = [x_train[:, :self.history][:,:,0], x_train[:, :self.history][:,-1,1:]]
+      train_target = y_train
+
     log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
-    if self.simple != True:
-      # NOTE: here we split the x inputs since we have two input layers, one with `history` and one with `indicators` inputs
-      self.model.fit(x=[x_train[:,:history_length], x_train[:,history_length:]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
-    else:
-      self.model.fit(x=[x_train[:,:history_length]], y=y_train, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
-    
+    self.model.fit(x=train_input, y=train_target, shuffle=True, batch_size=batch_size, epochs=epochs, callbacks=[tensorboard_callback])
+    self.model.save("output_model_{self.history}_{simple}")
+
   def test(self):
-    scaler = self.datafeed.get_scaler()
-    (x_test, y_test) = self.get_test_data()
+    scaler = self.dataset.get_scaler()
+    (x_test, y_test) = self.dataset.get_test_data()
     if self.simple == True:
       predictions = self.model.predict([x_test[:,:self.history]])
     else:
       predictions = self.model.predict([x_test[:,:self.history], x_test[:,self.history:]])
 
-    if scaler is not None:
-      prediction_scaler = MinMaxScaler(feature_range=scaler.feature_range)
-      prediction_scaler.min_, prediction_scaler.scale_ = scaler.min_[0], scaler.scale_[0] # NOTE: only scale down the first axis, i.e., the price axis
-      predictions = prediction_scaler.inverse_transform(predictions)
-    else:
-      prediction_scaler = None
     rmse = np.sqrt(np.mean(predictions - y_test) ** 2)
     print(f'RMSE: {rmse}')
 

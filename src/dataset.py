@@ -6,9 +6,9 @@ from stockstats import StockDataFrame
 from keras.preprocessing.sequence import TimeseriesGenerator
 
 
-class Database:
+class Dataset:
 
-  def __init__(self, tickers, history_size):
+  def __init__(self, history_size):
     self.predictors = ['adjcp', 'macd', 'rsi', 'cci', 'adx']
     self.predicted = 'adjcp'
     self.history = history_size
@@ -21,7 +21,12 @@ class Database:
     self.y_test = None
     self.test_size = 0
     self.train_size = 0
-    self.add_tickers(tickers)
+  
+  def get_train_data(self):
+    return self.x_train, self.y_train
+  
+  def get_test_data(self):
+    return self.x_test, self.y_test
 
   def add_tickers(self, tickers):
     for ticker in tickers:
