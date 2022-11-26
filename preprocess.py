@@ -59,12 +59,16 @@ def add_technical_indicator(df):
 
     return df
 
+def activation(x):
+    return 1/(1 + np.exp(-100*x)) # -100x to remove the percent and get more sensibility
+
 def preprocess_data(dataframe, dropna=False):
     """data preprocessing pipeline"""
     df = prepare_dataset(data=dataframe)
     # add technical indicators using stockstats
     df_final = add_technical_indicator(df)
-    df['pct_cp'] = df['adjcp'].pct_change()
+    df['pctcp'] = df['adjcp'].pct_change()
+    df['pctcp_norm'] = df['pctcp'].apply(activation)
     # fill the missing values at the beginning # NOTE: or delete them
     if dropna == True:
         df_final.dropna(inplace=True)

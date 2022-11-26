@@ -88,7 +88,7 @@ def build_model(input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor=
     z = Dense(16, activation="relu")(z)
     z = Dense(16, activation="relu")(z)
     z = Dense(8, activation="relu")(z)
-    z = Dense(num_outputs, activation="linear")(z)
+    z = Dense(num_outputs, activation="sigmoid")(z)
     # our model will accept the inputs of the two branches and
     # then output a single value
     model = Model(inputs=[x.input, y.input], outputs=z)
@@ -124,7 +124,7 @@ def show_instance(sequence, truth, model, scaler = None):
     plt.show()
 
 tickers = ['MSFT', 'TSLA', 'INTC', 'AAPL', 'DJIA', 'DOW', 'EXPE', 'PXD', 'MCHP', 'CRM', 'NRG', 'NOW']
-predictor = 'adjcp' # can use pct_cp
+predictor = 'pctcp_norm' # can use adjcp, pctcp or pctcp_norm
 dropna = True # or backward-fill
 history = 30
 indicators = 4
@@ -135,10 +135,10 @@ simple = False
 batch_size = 16
 epochs = 256
 scale = False
-training_file = 'data/training.data'
+reload_data = True
 
 # TODO: OUTPUT MULTIPLE VALUES ==> the next 5 prices for example
-if training_file is None:
+if reload_data:
     x_train, y_train, x_test, y_test, scaler = None, None, None, None, None
     for ticker in tickers:
         df = get_data(ticker)
@@ -157,10 +157,10 @@ if training_file is None:
 
     print(f"saving database containing {len(x_train)} training examples and {len(x_test)} test examples.")
     train_dataset = [x_train, x_test, y_train, y_test]
-    with open ('data/training.data', 'wb') as f:
+    with open (f'data/training_{predictor}.data', 'wb') as f:
         pkl.dump(train_dataset, f)
 else:
-    with open(training_file, 'rb') as f:
+    with open(f'data/training_{predictor}.data', 'rb') as f:
         [x_train, x_test, y_train, y_test] = pkl.load(f)
         print(f"loading database containing {len(x_train)} training examples and {len(x_test)} test examples.")
 
