@@ -9,6 +9,7 @@ Combine indicators and history for better predictions.
 ```bash
 python3 -m venv env
 pip3 install -r requirements.txt
+pip3 install https://github.com/cypox/financial-data/archive/master.zip
 ```
 
 # Running
