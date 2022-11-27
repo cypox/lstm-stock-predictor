@@ -21,10 +21,10 @@ class Dataset:
     self.y_test = None
     self.test_size = 0
     self.train_size = 0
-  
+
   def get_train_data(self):
     return self.x_train, self.y_train
-  
+
   def get_test_data(self):
     return self.x_test, self.y_test
 

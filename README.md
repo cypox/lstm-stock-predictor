@@ -40,4 +40,5 @@ Cyan: double-input network with lstm layers.
 
 # TODO
 
-[1] database scaling needs to be rewritten (multi-ticker scaler, save/load scaler)
+[1] fine tune model
+[2] add back-testing
