@@ -89,10 +89,12 @@ class Predictor:
 
     rmse = np.sqrt(np.mean(self.predictions - y_test) ** 2)
     print(f'RMSE: {rmse}')
-    return self.predictions
+    return self.predictions.reshape(-1)
 
   def save(self, filename):
     self.model.save(filename)
 
   def load(self, filename):
     self.model = tf.keras.models.load_model(filename)
+    self.history = self.model._input_layers[0].input.shape[1]
+    self.simple = (self.model._input_layers) == 1

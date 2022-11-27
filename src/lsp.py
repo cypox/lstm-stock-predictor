@@ -7,7 +7,7 @@ from viz import visualize_predictions
 
 if __name__ == '__main__':
   reload_data = False
-  training = True
+  training = False
   history = 30
 
   if reload_data:
@@ -17,7 +17,7 @@ if __name__ == '__main__':
       with open (f'data/training.data', 'wb') as f:
           pkl.dump(data, f)
   else:
-      with open(f'data/training.data', 'rb') as f:
+      with open(f'src/data/training.data', 'rb') as f:
           data = pkl.load(f)
           print(f"loading database containing {data.train_size} training examples and {data.test_size} test examples.")
 
@@ -33,4 +33,5 @@ if __name__ == '__main__':
     p.load("output_model")
     p.summary()
 
-  p.test()
+  predictions = p.test(data)
+  visualize_predictions(data, predictions)
