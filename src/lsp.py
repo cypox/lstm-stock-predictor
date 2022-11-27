@@ -27,7 +27,7 @@ if __name__ == '__main__':
     p.build_model(input_a_size = history, input_b_size = 4, num_outputs = 1, extractor='conv')
     p.compile()
     p.summary()
-    p.train(data, 30, 16, 50)
+    p.train(data, batch_size=16, epochs=50)
     p.save("output_model")
   else:
     p.load("output_model")

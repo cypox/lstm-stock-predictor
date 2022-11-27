@@ -14,6 +14,7 @@ class Predictor:
     self.simple = simple
 
   def build_model(self, input_a_size = 30, input_b_size = 4, num_outputs = 1, extractor='conv'):
+    self.history = input_a_size
     inputA = Input(shape=(input_a_size, 1))
     inputB = Input(shape=(input_b_size,))
     # the first branch operates on the first input
@@ -62,8 +63,7 @@ class Predictor:
   def summary(self):
     self.model.summary()
 
-  def train(self, dataset, history_length, batch_size, epochs):
-    self.history = history_length
+  def train(self, dataset, batch_size, epochs):
     # dataset.shuffle() # we are already shuffling in the fit function
     (x_train, y_train) = dataset.get_train_data()
     if self.simple:
