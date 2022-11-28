@@ -10,7 +10,7 @@ class Dataset:
 
   def __init__(self, history_size):
     self.predictors = ['adjcp', 'macd', 'rsi', 'cci', 'adx']
-    self.predicted = 'adjcp'
+    self.predicted = 'tendency'
     self.history = history_size
     self.dropna = True # or backward-fill
     self.train_test_ratio = 0.8
@@ -134,6 +134,9 @@ class Dataset:
   def activation(x):
     return 1/(1 + np.exp(-100*x)) # -100x to remove the percent and get more sensibility
 
+  def updown(x):
+    return (x > 0)
+
   def preprocess_data(self, dataframe, dropna=False):
     """data preprocessing pipeline"""
     df = Dataset.prepare_dataset(data=dataframe)
@@ -141,6 +144,7 @@ class Dataset:
     df_final = self.add_technical_indicator(df)
     df['pctcp'] = df['adjcp'].pct_change()
     df['pctcp_norm'] = df['pctcp'].apply(Dataset.activation)
+    df['tendency'] = df['pctcp'].apply(Dataset.updown)
     # fill the missing values at the beginning # NOTE: or delete them
     if dropna == True:
       df_final.dropna(inplace=True)

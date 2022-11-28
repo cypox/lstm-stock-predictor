@@ -34,7 +34,7 @@ class Predictor:
     x = Dense(16, activation="relu")(x)
     x = Dense(16, activation="relu")(x)
     x = Dense(8, activation="relu")(x)
-    x = Dense(num_outputs, activation="linear")(x)
+    x = Dense(num_outputs, activation="sigmoid")(x)
     x = Model(inputs=inputA, outputs=x)
 
     if self.simple == True:
